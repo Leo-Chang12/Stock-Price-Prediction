@@ -1,0 +1,25 @@
+tweet df = [
+jan 1, 0.025,
+jan 1, 0.4,
+jan 1, -0.2,
+jan 2, 0.4]
+finance df = [
+jan 1, 211, 214,
+jan 2, 214, 218,]
+
+concat =[date, sentiment, low, high
+jan 1, 0.025, NaN, NaN,
+jan 1, 0.4, NaN, NaN,
+jan 1, -0.2, NaN, NaN,
+jan 2, 0.4, NaN, NaN,
+jan 1, NaN, 211, 214,
+jan 2, NaN, 214, 218,]
+
+first, average out tweet sentiment:
+tweet df = [
+jan 1, 0.075,
+jan 2, 0.4]
+
+JOIN on DATE = [
+jan 1, 0.075, 211, 214,
+jan 2, 0.4, 214, 218]
