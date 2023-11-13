@@ -5,6 +5,7 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
 
 # 1. Data Loading and Preprocessing
 tweets = pd.read_csv('stock_tweets.csv')
@@ -51,7 +52,7 @@ def build_lstm(neurons=32, has_sentiment=True):
     return model
 
 lstm_model = build_lstm(32, True)
-lstm_model.fit(train_data, train_labels, epochs=100, batch_size=16, verbose=1)
+lstm_model.fit(train_data, train_labels, epochs=150, batch_size=16, verbose=0)
 lstm_predicted_labels = lstm_model.predict(test_data)
 lstm_predicted_prices = scaler.inverse_transform(lstm_predicted_labels)
 lstm_rmse = mean_squared_error(scaler.inverse_transform(test_labels), lstm_predicted_prices, squared=False)
@@ -65,7 +66,7 @@ train_data_no_sentiment = features_no_sentiment_scaled[:train_size].reshape(trai
 test_data_no_sentiment = features_no_sentiment_scaled[train_size:].reshape(len(features_no_sentiment_scaled) - train_size, 1, features_no_sentiment.shape[1])
 
 lstm_model_no_sentiment = build_lstm(32, False)
-lstm_model_no_sentiment.fit(train_data_no_sentiment, train_labels, epochs=100, batch_size=16, verbose=1)
+lstm_model_no_sentiment.fit(train_data_no_sentiment, train_labels, epochs=150, batch_size=16, verbose=0)
 lstm_no_sentiment_predicted_labels = lstm_model_no_sentiment.predict(test_data_no_sentiment)
 lstm_no_sentiment_predicted_prices = scaler.inverse_transform(lstm_no_sentiment_predicted_labels)
 lstm_no_sentiment_rmse = mean_squared_error(scaler.inverse_transform(test_labels), lstm_no_sentiment_predicted_prices, squared=False)
@@ -76,3 +77,19 @@ naive_predicted_prices = np.roll(scaler.inverse_transform(test_labels), 1)
 naive_predicted_prices[0] = scaler.inverse_transform(test_labels)[-1]
 naive_rmse = mean_squared_error(scaler.inverse_transform(test_labels), naive_predicted_prices, squared=False)
 print(f'naive rmse: {naive_rmse}')
+
+# 6. Plotting Actual vs Predicted Prices
+actual_prices = scaler.inverse_transform(test_labels)
+
+# Plotting the results
+plt.figure(figsize=(12, 8))
+plt.plot(actual_prices, label='Actual Prices', color='blue')
+plt.plot(lstm_predicted_prices, label='LSTM with Sentiment Analysis Predicted Prices', color='green')
+plt.plot(lstm_no_sentiment_predicted_prices, label='LSTM without Sentiment Analysis Predicted Prices', color='red')
+plt.plot(naive_predicted_prices, label='Naive Predicted Prices', color='orange')
+
+plt.title(f'Comparison of Actual Prices and Predicted Prices for {selected_stock}')
+plt.xlabel('Time (Days)')
+plt.ylabel('Price')
+plt.legend()
+plt.show()
