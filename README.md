@@ -1,230 +1,155 @@
-# Improved Stock Price Prediction using LSTM with Twitter Sentiment Analysis
+# Stock Price Prediction using LSTM with Twitter Sentiment Analysis
 
 **Authors:** Leo Chang, Aditya Saraf, Jenjen Chen
 
-This repository contains an improved stock price prediction system that addresses feedback from the Journal of Emerging Investigators (JEI) editorial review. The implementation provides enhanced accuracy, statistical rigor, and professional visualization suitable for academic publication.
+This project investigates the effectiveness of integrating Twitter sentiment analysis with Long Short-Term Memory (LSTM) neural networks for stock price prediction. Through rigorous empirical analysis of three major stocks (AAPL, TSLA, MSFT), this research provides honest scientific evidence about the practical limitations of sentiment-based financial prediction.
 
-## 🎯 Key Improvements
+## 🎯 Project Overview
 
-### Scientific Enhancements
-- **Multi-stock Analysis**: Extended analysis to AAPL, TSLA, and MSFT for generalizability testing
-- **Cross-Validation**: Implemented 5-fold time series cross-validation for uncertainty quantification
-- **Statistical Testing**: Added paired t-tests and Wilcoxon signed-rank tests for model comparisons
-- **Enhanced Feature Engineering**: Technical indicators (RSI, MACD, moving averages, volatility)
+### Research Question
+Does integrating Twitter sentiment analysis improve LSTM-based stock price prediction accuracy compared to models using only traditional technical indicators?
 
-### Model Architecture Improvements
-- **Advanced LSTM**: 3-layer LSTM with 128→64→32 units and regularization
-- **Regularization**: L2 regularization, batch normalization, and dropout layers
-- **Optimized Training**: Early stopping, learning rate scheduling, and validation splits
+### Key Findings
+Our comprehensive analysis revealed that **sentiment integration consistently degraded prediction performance**, with average RMSE increases of 32% across all tested stocks. This finding challenges optimistic claims in existing literature and provides valuable negative evidence for the computational finance community.
 
-### Visualization & Documentation
-- **Professional Figures**: High-resolution (300 DPI) publication-ready visualizations
-- **Comprehensive Metrics**: RMSE, MAE, R², with uncertainty bounds
-- **Results Tables**: Publication-ready tables with statistical significance
-- **Model Architecture Diagram**: Clear visualization of neural network structure
+### Scientific Contribution
+- **Methodological Rigor**: Proper time series cross-validation and statistical testing
+- **Honest Reporting**: Transparent presentation of negative results
+- **Literature Balance**: Addresses publication bias toward positive findings
+- **Practical Insights**: Realistic performance expectations for practitioners
 
-## 📊 Dataset
+## 📊 Results Summary
 
-The analysis uses two main datasets:
-- **Stock Price Data** (`stock_yfinance_data.csv`): Daily OHLCV data from Yahoo Finance
-- **Twitter Sentiment Data** (`stock_tweets.csv`): Tweets with sentiment analysis
+| Stock | Baseline RMSE | Sentiment RMSE | Performance Change | Statistical Significance |
+|-------|---------------|----------------|-------------------|-------------------------|
+| AAPL  | 6.694 ± 3.879 | 9.349 ± 6.703  | **+39.7% worse**  | No (p = 0.316) |
+| TSLA  | 20.254 ± 6.786| 26.829 ± 7.071 | **+32.5% worse**  | **Yes (p = 0.003)** |
+| MSFT  | 10.985 ± 3.362| 13.658 ± 2.463 | **+24.3% worse**  | No (p = 0.300) |
 
-### Supported Stocks
-- **AAPL** (Apple Inc.)
-- **TSLA** (Tesla Inc.)  
-- **MSFT** (Microsoft Corporation)
+**Overall**: 100% of comparisons showed performance degradation, with one statistically significant result confirming sentiment analysis made predictions significantly worse.
+
+## 🏗️ Project Structure
+
+```
+├── main_analysis.py                 # Primary analysis implementation (complex model)
+├── fixed_analysis.py                # Simplified analysis with clear results  
+├── original_implementation.py       # Initial basic implementation
+├── original_hyperparameter_tuning.py # Hyperparameter exploration
+├── honest_manuscript.md             # Complete research paper with honest results
+├── sample_results_demo.py           # Demonstration of expected output format
+├── debug_analysis.py                # Diagnostic tools for troubleshooting
+├── simple_test.py                   # Minimal test to isolate issues
+├── check_columns.py                 # Data validation utilities
+├── requirements.txt                 # Python dependencies
+├── stock_yfinance_data.csv          # Historical price data (OHLCV)
+├── stock_tweets.csv                 # Twitter sentiment data
+└── README.md                        # This documentation
+```
 
 ## 🚀 Quick Start
 
 ### Installation
 ```bash
-pip install numpy pandas matplotlib seaborn textblob tensorflow scikit-learn scipy
+# Install required dependencies
+pip install -r requirements.txt
 ```
 
 ### Running the Analysis
-```python
+
+**Recommended: Fixed Analysis (Clear Results)**
+```bash
+python fixed_analysis.py
+```
+
+**Alternative: Complex Analysis (Advanced Features)**
+```bash
 python main_analysis.py
 ```
 
-This will automatically:
-1. Load and preprocess data for all stocks
-2. Train LSTM models with and without sentiment analysis
-3. Perform cross-validation and statistical testing
-4. Generate comprehensive visualizations
-5. Create results tables in CSV format
-
-## 🧠 Model Architecture
-
-### Advanced LSTM with Sentiment Integration
-
-```
-Input: [60 days × Features]
-├── LSTM Layer 1: 128 units (return_sequences=True)
-│   ├── L2 Regularization (0.001)
-│   ├── Batch Normalization  
-│   └── Dropout (30%)
-├── LSTM Layer 2: 64 units (return_sequences=True)
-│   ├── L2 Regularization (0.001)
-│   ├── Batch Normalization
-│   └── Dropout (30%)  
-├── LSTM Layer 3: 32 units (return_sequences=False)
-│   ├── L2 Regularization (0.001)
-│   ├── Batch Normalization
-│   └── Dropout (20%)
-├── Dense Layer: 16 units (ReLU)
-│   ├── L2 Regularization (0.001)
-│   └── Dropout (10%)
-└── Output Layer: 1 unit (Linear)
-
-Optimizer: Adam (lr=0.001)
-Loss: Mean Squared Error
+**Demo Results (No Dependencies)**
+```bash
+python sample_results_demo.py
 ```
 
-### Features Used
+## 📈 Methodology
 
-#### Price-Based Features
-- Open, High, Low, Volume
-- Price returns and log returns
-- Price ranges and volume ratios
+### Data Sources
+- **Stock Data**: Daily OHLCV for AAPL, TSLA, MSFT (2021-2022)
+- **Twitter Data**: 80,793 stock-related tweets with sentiment analysis
+- **Time Period**: September 2021 - September 2022
 
-#### Technical Indicators  
-- Moving averages (5, 10, 20, 50 days)
-- RSI (Relative Strength Index)
-- MACD (Moving Average Convergence Divergence)
-- Volatility measures (5-day, 20-day)
+### Feature Engineering
 
-#### Sentiment Features
-- Daily average sentiment polarity
-- Sentiment standard deviation
-- Tweet count per day
-- Min/max daily sentiment
+**Technical Indicators (13 features):**
+- Price-based: Returns, high-low ranges, open-close changes
+- Moving averages: 5, 10, 20-day periods with ratios
+- Volume indicators: Moving averages and ratios
+- Momentum: RSI (Relative Strength Index)
+- Volatility: Rolling standard deviation of returns
 
-## 📈 Results Summary
+**Sentiment Features (3 features):**
+- `sent_mean`: Average daily sentiment polarity
+- `sent_std`: Sentiment diversity (standard deviation)
+- `sent_count`: Tweet volume per day
 
-### Model Performance (5-Fold Cross-Validation)
+### Model Architecture
 
-| Stock | Model Type | RMSE (Mean ± Std) | MAE (Mean ± Std) | R² (Mean ± Std) |
-|-------|------------|-------------------|------------------|------------------|
-| AAPL  | LSTM + Sentiment | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| AAPL  | LSTM Baseline | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| TSLA  | LSTM + Sentiment | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| TSLA  | LSTM Baseline | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| MSFT  | LSTM + Sentiment | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| MSFT  | LSTM Baseline | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
+**Baseline LSTM:**
+- Single LSTM layer (32 units)
+- Dropout (20%)
+- Dense output layer
+- Features: 13 technical indicators
 
-*Note: Values will be populated after running the analysis*
+**Sentiment-Enhanced LSTM:**
+- Two LSTM layers (64 → 32 units)
+- Multiple dropout layers (10-30%)
+- Dense intermediate layer (16 units)
+- Features: 13 technical + 3 sentiment
 
-### Statistical Significance
-- Paired t-tests compare models within each stock
-- Wilcoxon signed-rank tests provide non-parametric validation
-- P-values < 0.05 indicate statistically significant improvements
+### Evaluation Method
+- **Cross-Validation**: 3-fold time series split
+- **Metrics**: RMSE (primary), MAE, R²
+- **Statistical Testing**: Paired t-tests
+- **Sequence Length**: 30 days → 1 day prediction
 
-## 📁 Output Files
+## 🔍 Why Sentiment Analysis Failed
 
-Running the analysis generates:
-- `comprehensive_results_table.csv`: Detailed results table
-- `comprehensive_stock_analysis.png`: Multi-panel visualization
-- `{STOCK}_prediction_detailed.png`: Individual stock predictions
-- Console output with statistical summaries
+### 1. **Weak Signal-to-Noise Ratio**
+- Correlation between sentiment and prices: -0.11 to +0.10
+- Twitter sentiment contained more noise than predictive information
 
-## 🔧 Customization
+### 2. **Market Efficiency**
+- Modern algorithmic trading already incorporates social sentiment
+- By the time tweets are posted, information is already in prices
 
-### Modifying Parameters
-```python
-# Initialize with custom parameters
-predictor = ImprovedStockPredictor(
-    sequence_length=30,  # Days of historical data
-    prediction_horizon=1  # Days ahead to predict
-)
+### 3. **Overfitting Issues**
+- Limited dataset size (200-233 sequences per stock)
+- Complex sentiment models overfitted to training data
+- Higher validation losses despite lower training losses
 
-# Run analysis on different stocks
-stocks = ['AAPL', 'GOOGL', 'AMZN']
-results = predictor.run_complete_analysis(stocks)
-```
+### 4. **Data Quality Challenges**
+- Social media contains spam, noise, and irrelevant content
+- Sentiment analysis tools struggle with financial jargon and sarcasm
 
-### Adding New Features
-Extend the `_create_technical_features()` method:
-```python
-def _create_technical_features(self, df):
-    # Add your custom features here
-    df['custom_indicator'] = your_calculation(df)
-    return df
-```
+## 🛠️ Technical Details
 
-## 📋 Requirements
+### Dependencies
+- **TensorFlow/Keras**: Deep learning framework
+- **scikit-learn**: Machine learning utilities
+- **pandas/numpy**: Data processing
+- **TextBlob**: Sentiment analysis
+- **matplotlib/seaborn**: Visualization
 
-- Python 3.7+
-- TensorFlow 2.x
-- NumPy, Pandas, Matplotlib, Seaborn
-- Scikit-learn, SciPy
-- TextBlob for sentiment analysis
+### Performance Optimization
+- **Early stopping**: Prevents overfitting
+- **Dropout layers**: Regularization technique
+- **Batch normalization**: Training stability
+- **Time series validation**: Respects temporal dependencies
 
-## 🏗️ Project Structure
-
-```
-├── main_analysis.py                      # Main analysis script
-├── original_implementation.py            # Original implementation
-├── original_hyperparameter_tuning.py     # Original hyperparameter tuning
-├── sample_results_demo.py                # Demo results display
-├── stock_yfinance_data.csv               # Stock price data
-├── stock_tweets.csv                      # Twitter sentiment data
-├── JEI_FEEDBACK_ADDRESSED.md             # Response to journal feedback
-├── requirements.txt                      # Dependencies
-└── [Generated outputs]
-    ├── comprehensive_results_table.csv
-    ├── comprehensive_stock_analysis.png
-    └── {STOCK}_prediction_detailed.png
-```
-
-## 📊 Methodology
-
-### Cross-Validation Strategy
-- **Time Series Split**: 5-fold validation respecting temporal order
-- **Train/Validation/Test**: 60%/20%/20% split per fold
-- **Rolling Window**: Maintains chronological integrity
-
-### Statistical Testing
-- **Paired T-Test**: Tests mean difference in RMSE scores
-- **Wilcoxon Test**: Non-parametric alternative for robustness
-- **Effect Size**: Calculates practical significance of improvements
-
-### Evaluation Metrics
-- **RMSE**: Root Mean Square Error (primary metric)
-- **MAE**: Mean Absolute Error (interpretability)
-- **R²**: Coefficient of determination (explained variance)
-
-## 🎯 Addressing JEI Feedback
-
-### Required Changes Implemented
-✅ **Generalizability**: Analysis extended to multiple stocks (AAPL, TSLA, MSFT)  
-✅ **Cross-Validation**: 5-fold time series CV with uncertainty quantification  
-✅ **Statistical Testing**: Paired t-tests and Wilcoxon tests implemented  
-✅ **Professional Visualization**: High-quality figures with proper formatting  
-✅ **Model Architecture**: Clear documentation and diagram included  
-✅ **Comprehensive Metrics**: RMSE, MAE, R² with confidence intervals  
-
-### Recommended Changes Implemented  
-✅ **Enhanced Features**: Technical indicators and sentiment metrics  
-✅ **Model Improvements**: Multi-layer LSTM with regularization  
-✅ **Publication Quality**: Professional tables and figures  
-✅ **Code Accessibility**: Well-documented, modular code structure  
-
-## 📚 References
-
-This implementation builds upon established methods in:
-- LSTM neural networks for time series prediction
-- Sentiment analysis for financial forecasting  
-- Technical analysis indicators
-- Cross-validation for time series data
-
-## 🤝 Contributing
-
-For questions, suggestions, or contributions, please contact the authors or create an issue in the repository.
-
-## 📄 License
-
-This project is created for academic purposes as part of research submitted to the Journal of Emerging Investigators.
-
----
-
-*Generated using the Improved Stock Price Prediction System*
+### Data Processing Pipeline
+1. **Tweet preprocessing**: Remove spam, normalize text
+2. **Sentiment calculation**: TextBlob polarity scoring
+3. **Daily aggregation**: Mean, std dev, count per day
+4. **Technical indicators**: Calculate from price data
+5. **Feature scaling**: Min-Max normalization
+6. **Sequence creation**: 30-day windows for LSTM input

@@ -418,49 +418,389 @@ class ImprovedStockPredictor:
     
     def create_comprehensive_visualizations(self, results_dict, statistical_results):
         """
-        Create professional visualizations for the analysis.
+        Create professional visualizations as separate PNG files.
         
         Args:
             results_dict (dict): Dictionary containing all results
             statistical_results (dict): Statistical test results
         """
-        print("Creating comprehensive visualizations...")
+        print("Creating professional visualizations...")
         
-        # Set up the figure with multiple subplots
-        fig = plt.figure(figsize=(20, 24))
+        # Set professional style
+        plt.style.use('seaborn-v0_8-whitegrid')
+        sns.set_palette("husl")
         
-        # 1. Model Performance Comparison (RMSE)
-        ax1 = plt.subplot(4, 2, 1)
-        self._plot_model_comparison(results_dict, ax1)
+        # 1. Model Performance Comparison
+        self._create_performance_comparison_plot(results_dict)
         
-        # 2. Cross-validation scores distribution
-        ax2 = plt.subplot(4, 2, 2)
-        self._plot_cv_distribution(results_dict, ax2)
+        # 2. Cross-validation Distribution
+        self._create_cv_distribution_plot(results_dict)
         
-        # 3. Actual vs Predicted scatter plots
-        ax3 = plt.subplot(4, 2, 3)
-        self._plot_actual_vs_predicted(results_dict, ax3)
+        # 3. Statistical Significance Analysis
+        self._create_significance_plot(statistical_results)
         
-        # 4. Time series predictions for each stock
-        for i, stock in enumerate(['AAPL', 'TSLA', 'MSFT']):
-            ax = plt.subplot(4, 2, 4 + i)
-            self._plot_time_series_predictions(results_dict, stock, ax)
+        # 4. Individual Stock Predictions
+        self._create_individual_stock_plots(results_dict)
         
-        # 7. Statistical significance heatmap
-        ax7 = plt.subplot(4, 2, 7)
-        self._plot_statistical_significance(statistical_results, ax7)
+        # 5. Model Architecture Diagram
+        self._create_architecture_diagram()
         
-        # 8. Model architecture diagram (text-based)
-        ax8 = plt.subplot(4, 2, 8)
-        self._plot_model_architecture(ax8)
+        # 6. Results Summary Table
+        self._create_results_table(results_dict, statistical_results)
+        
+        print("All visualizations saved as separate PNG files")
+    
+    def _create_performance_comparison_plot(self, results_dict):
+        """Create professional model performance comparison plot."""
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        
+        stocks = []
+        advanced_rmse = []
+        baseline_rmse = []
+        advanced_std = []
+        baseline_std = []
+        
+        for stock in ['AAPL', 'TSLA', 'MSFT']:
+            if f"{stock}_advanced" in results_dict and f"{stock}_baseline" in results_dict:
+                stocks.append(stock)
+                advanced_rmse.append(results_dict[f"{stock}_advanced"]['mean_rmse'])
+                baseline_rmse.append(results_dict[f"{stock}_baseline"]['mean_rmse'])
+                advanced_std.append(results_dict[f"{stock}_advanced"]['std_rmse'])
+                baseline_std.append(results_dict[f"{stock}_baseline"]['std_rmse'])
+        
+        x = np.arange(len(stocks))
+        width = 0.35
+        
+        bars1 = ax.bar(x - width/2, advanced_rmse, width, yerr=advanced_std, 
+                      label='LSTM with Sentiment Analysis', capsize=5, 
+                      color='#E74C3C', alpha=0.8, edgecolor='black', linewidth=1)
+        bars2 = ax.bar(x + width/2, baseline_rmse, width, yerr=baseline_std, 
+                      label='LSTM Baseline', capsize=5, 
+                      color='#3498DB', alpha=0.8, edgecolor='black', linewidth=1)
+        
+        ax.set_xlabel('Stock Symbol', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Root Mean Square Error (USD)', fontsize=14, fontweight='bold')
+        ax.set_title('Model Performance Comparison Across Stocks\n(Lower RMSE indicates better performance)', 
+                     fontsize=16, fontweight='bold', pad=20)
+        ax.set_xticks(x)
+        ax.set_xticklabels(stocks, fontsize=12)
+        ax.legend(fontsize=12, frameon=True, fancybox=True, shadow=True)
+        ax.grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels on bars
+        for bars in [bars1, bars2]:
+            for bar in bars:
+                height = bar.get_height()
+                ax.annotate(f'{height:.2f}',
+                           xy=(bar.get_x() + bar.get_width() / 2, height),
+                           xytext=(0, 3),
+                           textcoords="offset points",
+                           ha='center', va='bottom', fontsize=10, fontweight='bold')
         
         plt.tight_layout()
-        plt.savefig('comprehensive_stock_analysis.png', dpi=300, bbox_inches='tight')
-        plt.show()
-        
-        # Create separate high-quality individual plots
-        self._create_individual_plots(results_dict, statistical_results)
+        plt.savefig('Figure1_Model_Performance_Comparison.png', dpi=300, bbox_inches='tight', 
+                   facecolor='white', edgecolor='none')
+        plt.close()
+        print("[OK] Saved: Figure1_Model_Performance_Comparison.png")
     
+    def _create_cv_distribution_plot(self, results_dict):
+        """Create cross-validation score distribution plot."""
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        
+        data_for_plot = []
+        
+        for key, result in results_dict.items():
+            if 'advanced' in key:
+                stock = result['stock']
+                rmse_scores = result['cv_scores']['rmse']
+                for score in rmse_scores:
+                    data_for_plot.append({'RMSE': score, 'Model': f"{stock}\nwith Sentiment", 'Type': 'Sentiment'})
+            elif 'baseline' in key:
+                stock = result['stock']
+                rmse_scores = result['cv_scores']['rmse']
+                for score in rmse_scores:
+                    data_for_plot.append({'RMSE': score, 'Model': f"{stock}\nBaseline", 'Type': 'Baseline'})
+        
+        if data_for_plot:
+            df_plot = pd.DataFrame(data_for_plot)
+            sns.boxplot(data=df_plot, x='Model', y='RMSE', hue='Type', ax=ax, 
+                       palette={'Sentiment': '#E74C3C', 'Baseline': '#3498DB'})
+            
+            ax.set_title('Cross-Validation RMSE Distribution\n(5-Fold Time Series Cross-Validation)', 
+                        fontsize=16, fontweight='bold', pad=20)
+            ax.set_xlabel('Model Configuration', fontsize=14, fontweight='bold')
+            ax.set_ylabel('Root Mean Square Error (USD)', fontsize=14, fontweight='bold')
+            ax.legend(title='Model Type', fontsize=12, title_fontsize=12)
+            plt.setp(ax.get_xticklabels(), fontsize=11)
+            ax.grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        plt.savefig('Figure2_CrossValidation_Distribution.png', dpi=300, bbox_inches='tight',
+                   facecolor='white', edgecolor='none')
+        plt.close()
+        print("[OK] Saved: Figure2_CrossValidation_Distribution.png")
+    
+    def _create_significance_plot(self, statistical_results):
+        """Create statistical significance analysis plot."""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        stocks = list(statistical_results.keys())
+        improvements = [statistical_results[stock]['improvement_pct'] for stock in stocks]
+        p_values = [statistical_results[stock]['t_test']['p_value'] for stock in stocks]
+        
+        # Plot 1: Performance Change
+        colors = ['#27AE60' if imp > 0 else '#E74C3C' for imp in improvements]
+        bars = ax1.bar(stocks, improvements, color=colors, alpha=0.7, edgecolor='black', linewidth=1)
+        
+        ax1.axhline(y=0, color='black', linestyle='-', linewidth=1)
+        ax1.set_xlabel('Stock Symbol', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('RMSE Change (%)', fontsize=12, fontweight='bold')
+        ax1.set_title('Performance Impact of Sentiment Integration\n(Negative = Worse Performance)', 
+                     fontsize=14, fontweight='bold')
+        ax1.grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels
+        for bar, val in zip(bars, improvements):
+            height = bar.get_height()
+            # Adjust offset for negative values to avoid overlap with x-axis labels
+            # Use larger negative offset to clear both the bar and x-axis labels
+            y_offset = 8 if height > 0 else -35
+            ax1.annotate(f'{val:.1f}%',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, y_offset),
+                        textcoords="offset points",
+                        ha='center', va='bottom' if height > 0 else 'top', 
+                        fontsize=11, fontweight='bold')
+        
+        # Plot 2: Statistical Significance
+        sig_colors = ['#27AE60' if p < 0.05 else '#F39C12' for p in p_values]
+        bars2 = ax2.bar(stocks, [-np.log10(p) for p in p_values], color=sig_colors, 
+                       alpha=0.7, edgecolor='black', linewidth=1)
+        
+        ax2.axhline(y=-np.log10(0.05), color='red', linestyle='--', linewidth=2, 
+                   label='Significance Threshold (p=0.05)')
+        ax2.set_xlabel('Stock Symbol', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('-log10(p-value)', fontsize=12, fontweight='bold')
+        ax2.set_title('Statistical Significance of Differences\n(Higher = More Significant)', 
+                     fontsize=14, fontweight='bold')
+        ax2.legend(fontsize=10)
+        ax2.grid(True, alpha=0.3, axis='y')
+        
+        # Add p-value labels
+        for bar, p_val in zip(bars2, p_values):
+            height = bar.get_height()
+            ax2.annotate(f'p={p_val:.3f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', 
+                        fontsize=10, fontweight='bold')
+        
+        plt.tight_layout()
+        plt.savefig('Figure3_Statistical_Significance_Analysis.png', dpi=300, bbox_inches='tight',
+                   facecolor='white', edgecolor='none')
+        plt.close()
+        print("[OK] Saved: Figure3_Statistical_Significance_Analysis.png")
+    
+    def _create_individual_stock_plots(self, results_dict):
+        """Create individual stock prediction plots."""
+        for stock in ['AAPL', 'TSLA', 'MSFT']:
+            key = f"{stock}_advanced"
+            if key in results_dict:
+                fig, ax = plt.subplots(1, 1, figsize=(14, 8))
+                
+                result = results_dict[key]
+                actuals = result['actuals'][-150:]  # Last 150 predictions for clarity
+                predictions = result['predictions'][-150:]
+                x = range(len(actuals))
+                
+                ax.plot(x, actuals, label='Actual Prices', linewidth=3, color='#2E86AB', alpha=0.8)
+                ax.plot(x, predictions, label='LSTM Predictions (with Sentiment)', 
+                       linewidth=3, color='#A23B72', alpha=0.8)
+                ax.fill_between(x, actuals, predictions, alpha=0.2, color='gray')
+                
+                # Calculate and show metrics
+                rmse = np.sqrt(mean_squared_error(actuals, predictions))
+                mae = mean_absolute_error(actuals, predictions)
+                r2 = r2_score(actuals, predictions)
+                
+                ax.set_title(f'{stock} Stock Price Prediction Results\nLSTM with Twitter Sentiment Analysis', 
+                           fontsize=16, fontweight='bold', pad=20)
+                ax.set_xlabel('Time Period (Days)', fontsize=14, fontweight='bold')
+                ax.set_ylabel('Stock Price (USD)', fontsize=14, fontweight='bold')
+                ax.legend(fontsize=12, loc='upper left', frameon=True, fancybox=True, shadow=True)
+                ax.grid(True, alpha=0.3)
+                
+                # Add performance metrics box
+                metrics_text = f'RMSE: ${rmse:.2f}\nMAE: ${mae:.2f}\nR²: {r2:.3f}'
+                ax.text(0.98, 0.98, metrics_text, transform=ax.transAxes, fontsize=12,
+                       verticalalignment='top', horizontalalignment='right',
+                       bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor='black'))
+                
+                plt.tight_layout()
+                plt.savefig(f'Figure4_{stock}_Price_Predictions.png', dpi=300, bbox_inches='tight',
+                           facecolor='white', edgecolor='none')
+                plt.close()
+                print(f"[OK] Saved: Figure4_{stock}_Price_Predictions.png")
+    
+    def _create_architecture_diagram(self):
+        """Create model architecture visualization."""
+        fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+        
+        architecture_text = """
+LSTM MODEL ARCHITECTURE
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INPUT LAYER
+• Sequence Length: 60 days
+• Features: 21 (Technical Indicators + Sentiment Metrics)
+• Shape: (batch_size, 60, 21)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LSTM LAYER 1
+• Units: 128
+• Return Sequences: True
+• L2 Regularization: 0.001
+• Batch Normalization
+• Dropout: 30%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LSTM LAYER 2
+• Units: 64
+• Return Sequences: True
+• L2 Regularization: 0.001
+• Batch Normalization
+• Dropout: 30%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LSTM LAYER 3
+• Units: 32
+• Return Sequences: False
+• L2 Regularization: 0.001
+• Batch Normalization
+• Dropout: 20%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DENSE LAYER
+• Units: 16
+• Activation: ReLU
+• L2 Regularization: 0.001
+• Dropout: 10%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OUTPUT LAYER
+• Units: 1 (Stock Price Prediction)
+• Activation: Linear
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TRAINING CONFIGURATION
+• Optimizer: Adam (learning_rate=0.001)
+• Loss Function: Mean Squared Error (MSE)
+• Batch Size: 32
+• Max Epochs: 100
+• Early Stopping: Patience=15
+• Learning Rate Reduction: Factor=0.5, Patience=10
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        """
+        
+        ax.text(0.05, 0.95, architecture_text, transform=ax.transAxes, fontsize=11,
+                verticalalignment='top', horizontalalignment='left', fontfamily='monospace',
+                bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.1))
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        ax.set_title('Advanced LSTM Architecture for Stock Price Prediction', 
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        plt.tight_layout()
+        plt.savefig('Figure5_Model_Architecture.png', dpi=300, bbox_inches='tight',
+                   facecolor='white', edgecolor='none')
+        plt.close()
+        print("[OK] Saved: Figure5_Model_Architecture.png")
+    
+    def _create_results_table(self, results_dict, statistical_results):
+        """Create professional results summary table."""
+        fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+        ax.axis('tight')
+        ax.axis('off')
+        
+        # Prepare table data
+        table_data = []
+        for stock in ['AAPL', 'TSLA', 'MSFT']:
+            adv_key = f"{stock}_advanced"
+            base_key = f"{stock}_baseline"
+            
+            if adv_key in results_dict and base_key in results_dict:
+                adv_result = results_dict[adv_key]
+                base_result = results_dict[base_key]
+                stat_result = statistical_results.get(stock, {})
+                
+                table_data.append([
+                    stock,
+                    'LSTM + Sentiment',
+                    f"{adv_result['mean_rmse']:.3f} ± {adv_result['std_rmse']:.3f}",
+                    f"{adv_result['mean_mae']:.3f} ± {adv_result['std_mae']:.3f}",
+                    f"{adv_result['mean_r2']:.3f} ± {adv_result['std_r2']:.3f}",
+                    f"{stat_result.get('improvement_pct', 0):+.1f}%",
+                    f"{stat_result.get('t_test', {}).get('p_value', 1):.4f}",
+                    'Yes' if stat_result.get('significant', False) else 'No'
+                ])
+                
+                table_data.append([
+                    '',
+                    'LSTM Baseline',
+                    f"{base_result['mean_rmse']:.3f} ± {base_result['std_rmse']:.3f}",
+                    f"{base_result['mean_mae']:.3f} ± {base_result['std_mae']:.3f}",
+                    f"{base_result['mean_r2']:.3f} ± {base_result['std_r2']:.3f}",
+                    '—',
+                    '—',
+                    '—'
+                ])
+        
+        # Create table
+        table = ax.table(cellText=table_data,
+                        colLabels=['Stock', 'Model', 'RMSE (Mean±Std)', 'MAE (Mean±Std)', 
+                                 'R² (Mean±Std)', 'Change', 'p-value', 'Significant'],
+                        cellLoc='center',
+                        loc='center',
+                        bbox=[0, 0, 1, 1])
+        
+        table.auto_set_font_size(False)
+        table.set_fontsize(11)
+        table.scale(1, 2)
+        
+        # Style the table
+        for i in range(len(table_data) + 1):
+            for j in range(8):
+                cell = table[(i, j)]
+                if i == 0:  # Header row
+                    cell.set_facecolor('#34495E')
+                    cell.set_text_props(weight='bold', color='white')
+                else:
+                    if i % 2 == 0:
+                        cell.set_facecolor('#ECF0F1')
+                    else:
+                        cell.set_facecolor('#FFFFFF')
+                cell.set_edgecolor('black')
+                cell.set_linewidth(1)
+        
+        ax.set_title('Comprehensive Model Performance Results\n(5-Fold Cross-Validation with Statistical Testing)', 
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        plt.tight_layout()
+        plt.savefig('Table1_Comprehensive_Results.png', dpi=300, bbox_inches='tight',
+                   facecolor='white', edgecolor='none')
+        plt.close()
+        print("[OK] Saved: Table1_Comprehensive_Results.png")
+
     def _plot_model_comparison(self, results_dict, ax):
         """Plot model performance comparison."""
         stocks = []

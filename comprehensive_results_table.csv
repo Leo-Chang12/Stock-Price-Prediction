@@ -1,0 +1,7 @@
+Stock,Model,RMSE (Mean ± Std),MAE (Mean ± Std),R² (Mean ± Std),Improvement (%),P-value,Significant
+AAPL,LSTM + Sentiment,9.664 ± 5.527,8.904 ± 5.762,-7.193 ± 11.182,-99.43%,0.2431,No
+,LSTM Baseline,4.846 ± 2.317,4.142 ± 2.297,-0.260 ± 0.974,—,—,—
+TSLA,LSTM + Sentiment,24.074 ± 16.810,22.002 ± 17.086,-11.477 ± 21.571,-27.39%,0.4636,No
+,LSTM Baseline,18.898 ± 9.082,16.532 ± 8.867,-5.263 ± 7.653,—,—,—
+MSFT,LSTM + Sentiment,14.782 ± 3.921,13.421 ± 3.859,-3.727 ± 2.434,-38.52%,0.0466,Yes
+,LSTM Baseline,10.671 ± 3.966,9.523 ± 4.156,-1.396 ± 1.234,—,—,—
