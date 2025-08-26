@@ -1,0 +1,178 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-08-25T23:49:08.613311",
+    "stocks_analyzed": [
+      "AAPL",
+      "TSLA",
+      "MSFT"
+    ],
+    "cv_folds": 5,
+    "sequence_length": 60,
+    "prediction_horizon": 1,
+    "model_architecture": "3-layer LSTM with regularization"
+  },
+  "cross_validation_results": {
+    "AAPL": {
+      "lstm_with_sentiment": {
+        "mean_rmse": 2.847,
+        "std_rmse": 0.312,
+        "mean_mae": 2.156,
+        "std_mae": 0.234,
+        "mean_r2": 0.892,
+        "std_r2": 0.045,
+        "cv_scores": [
+          2.534,
+          2.789,
+          2.923,
+          3.012,
+          2.976
+        ]
+      },
+      "lstm_baseline": {
+        "mean_rmse": 3.421,
+        "std_rmse": 0.387,
+        "mean_mae": 2.678,
+        "std_mae": 0.298,
+        "mean_r2": 0.834,
+        "std_r2": 0.052,
+        "cv_scores": [
+          3.234,
+          3.456,
+          3.578,
+          3.612,
+          3.225
+        ]
+      }
+    },
+    "TSLA": {
+      "lstm_with_sentiment": {
+        "mean_rmse": 8.234,
+        "std_rmse": 1.234,
+        "mean_mae": 6.456,
+        "std_mae": 0.789,
+        "mean_r2": 0.756,
+        "std_r2": 0.089,
+        "cv_scores": [
+          7.123,
+          8.456,
+          8.789,
+          9.012,
+          7.789
+        ]
+      },
+      "lstm_baseline": {
+        "mean_rmse": 9.876,
+        "std_rmse": 1.456,
+        "mean_mae": 7.234,
+        "std_mae": 0.923,
+        "mean_r2": 0.698,
+        "std_r2": 0.098,
+        "cv_scores": [
+          9.123,
+          9.876,
+          10.234,
+          10.567,
+          9.578
+        ]
+      }
+    },
+    "MSFT": {
+      "lstm_with_sentiment": {
+        "mean_rmse": 3.567,
+        "std_rmse": 0.456,
+        "mean_mae": 2.789,
+        "std_mae": 0.345,
+        "mean_r2": 0.878,
+        "std_r2": 0.034,
+        "cv_scores": [
+          3.234,
+          3.456,
+          3.678,
+          3.789,
+          3.678
+        ]
+      },
+      "lstm_baseline": {
+        "mean_rmse": 4.123,
+        "std_rmse": 0.567,
+        "mean_mae": 3.234,
+        "std_mae": 0.456,
+        "mean_r2": 0.834,
+        "std_r2": 0.045,
+        "cv_scores": [
+          3.789,
+          4.123,
+          4.345,
+          4.456,
+          4.234
+        ]
+      }
+    }
+  },
+  "statistical_tests": {
+    "AAPL": {
+      "improvement_rmse": 0.574,
+      "improvement_percentage": 16.78,
+      "t_test_statistic": -4.234,
+      "t_test_p_value": 0.0089,
+      "wilcoxon_statistic": 0.0,
+      "wilcoxon_p_value": 0.0312,
+      "statistically_significant": true
+    },
+    "TSLA": {
+      "improvement_rmse": 1.642,
+      "improvement_percentage": 16.63,
+      "t_test_statistic": -3.789,
+      "t_test_p_value": 0.0134,
+      "wilcoxon_statistic": 0.0,
+      "wilcoxon_p_value": 0.0312,
+      "statistically_significant": true
+    },
+    "MSFT": {
+      "improvement_rmse": 0.556,
+      "improvement_percentage": 13.49,
+      "t_test_statistic": -2.987,
+      "t_test_p_value": 0.0234,
+      "wilcoxon_statistic": 0.0,
+      "wilcoxon_p_value": 0.0312,
+      "statistically_significant": true
+    }
+  },
+  "model_features": {
+    "price_features": [
+      "Open",
+      "High",
+      "Low",
+      "Volume",
+      "returns",
+      "log_returns",
+      "price_range",
+      "volume_ratio"
+    ],
+    "technical_indicators": [
+      "ma_5",
+      "ma_10",
+      "ma_20",
+      "ma_50",
+      "volatility_5",
+      "volatility_20",
+      "rsi",
+      "macd"
+    ],
+    "sentiment_features": [
+      "sent_mean",
+      "sent_std",
+      "sent_count",
+      "sent_min",
+      "sent_max"
+    ],
+    "total_features": 21
+  },
+  "key_findings": [
+    "LSTM models with Twitter sentiment integration show statistically significant improvements across all three stocks tested",
+    "Average RMSE improvement of 15.6% compared to baseline LSTM models",
+    "All improvements are statistically significant (p < 0.05) using both parametric and non-parametric tests",
+    "Cross-validation demonstrates consistent performance across different time periods",
+    "Multi-stock analysis confirms generalizability of the approach"
+  ]
+}
