@@ -5,6 +5,9 @@ Creates Figure 6 for the Stock Price Prediction manuscript
 This script performs post-hoc permutation importance analysis to demonstrate
 that sentiment features rank lowest in predictive importance compared to
 traditional price and volume features.
+
+Data loading, feature engineering, and model architecture are identical
+to main_analysis.py.
 """
 
 import numpy as np
@@ -13,12 +16,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import mean_squared_error
-from sklearn.inspection import permutation_importance
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout, BatchNormalization
 from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from textblob import TextBlob
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -41,10 +44,11 @@ import tensorflow as tf
 tf.random.set_seed(42)
 
 
-def load_and_preprocess_data(stock_symbol='AAPL'):
-    """Load and preprocess stock data with all features."""
-    from textblob import TextBlob
-
+def load_and_preprocess_data(stock_symbol):
+    """
+    Load and preprocess stock data with sentiment analysis.
+    Identical to main_analysis.py ImprovedStockPredictor.load_and_preprocess_data().
+    """
     # Load datasets
     tweets = pd.read_csv('stock_tweets.csv')
     yfinance_data = pd.read_csv('stock_yfinance_data.csv')
@@ -53,55 +57,50 @@ def load_and_preprocess_data(stock_symbol='AAPL'):
     tweets_selected = tweets[tweets['Stock Name'] == stock_symbol].copy()
     yfinance_selected = yfinance_data[yfinance_data['Stock Name'] == stock_symbol].copy()
 
-    # Process sentiment
-    tweets_selected['Sentiment'] = tweets_selected['Tweet'].apply(
-        lambda x: TextBlob(str(x)).sentiment.polarity if pd.notna(x) else 0.0
-    )
-    tweets_selected['Subjectivity'] = tweets_selected['Tweet'].apply(
-        lambda x: TextBlob(str(x)).sentiment.subjectivity if pd.notna(x) else 0.0
-    )
+    # Sentiment analysis — identical to main_analysis.py _calculate_sentiment
+    def calculate_sentiment(text):
+        try:
+            if pd.isna(text) or text == '':
+                return 0.0
+            return TextBlob(str(text)).sentiment.polarity
+        except:
+            return 0.0
+
+    tweets_selected['Sentiment'] = tweets_selected['Tweet'].apply(calculate_sentiment)
     tweets_selected['Date'] = pd.to_datetime(tweets_selected['Date']).dt.date
 
-    # Aggregate sentiment metrics
+    # Aggregate sentiment metrics — identical column names to main_analysis.py
     daily_sentiment = tweets_selected.groupby('Date').agg({
-        'Sentiment': ['mean', 'std', 'count', 'min', 'max'],
-        'Subjectivity': ['mean', 'std']
+        'Sentiment': ['mean', 'std', 'count', 'min', 'max']
     }).round(6)
-    daily_sentiment.columns = ['sent_polarity_mean', 'sent_polarity_std', 'sent_count',
-                                'sent_polarity_min', 'sent_polarity_max',
-                                'sent_subjectivity_mean', 'sent_subjectivity_std']
+    daily_sentiment.columns = ['sent_mean', 'sent_std', 'sent_count', 'sent_min', 'sent_max']
     daily_sentiment = daily_sentiment.reset_index()
-    daily_sentiment['sent_polarity_std'] = daily_sentiment['sent_polarity_std'].fillna(0)
-    daily_sentiment['sent_subjectivity_std'] = daily_sentiment['sent_subjectivity_std'].fillna(0)
+    daily_sentiment['sent_std'] = daily_sentiment['sent_std'].fillna(0)
 
-    # Process price data and create technical features
+    # Process price data
     yfinance_selected['Date'] = pd.to_datetime(yfinance_selected['Date']).dt.date
     yfinance_selected = yfinance_selected.sort_values('Date')
 
-    # Technical features
+    # Technical features — identical to main_analysis.py _create_technical_features
     df = yfinance_selected.copy()
     df['returns'] = df['Close'].pct_change()
     df['log_returns'] = np.log(df['Close'] / df['Close'].shift(1))
     df['price_range'] = (df['High'] - df['Low']) / df['Close']
     df['volume_ratio'] = df['Volume'] / df['Volume'].rolling(20).mean()
 
-    # Moving averages
     for window in [5, 10, 20, 50]:
         df[f'ma_{window}'] = df['Close'].rolling(window).mean()
         df[f'ma_ratio_{window}'] = df['Close'] / df[f'ma_{window}']
 
-    # Volatility
     df['volatility_5'] = df['returns'].rolling(5).std()
     df['volatility_20'] = df['returns'].rolling(20).std()
 
-    # RSI
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     df['rsi'] = 100 - (100 / (1 + rs))
 
-    # MACD
     exp1 = df['Close'].ewm(span=12).mean()
     exp2 = df['Close'].ewm(span=26).mean()
     df['macd'] = exp1 - exp2
@@ -109,20 +108,19 @@ def load_and_preprocess_data(stock_symbol='AAPL'):
     # Merge with sentiment
     combined_data = df.merge(daily_sentiment, on='Date', how='left')
 
-    # Fill missing sentiment data
-    sentiment_cols = ['sent_polarity_mean', 'sent_polarity_std', 'sent_count',
-                      'sent_polarity_min', 'sent_polarity_max',
-                      'sent_subjectivity_mean', 'sent_subjectivity_std']
+    # Fill missing sentiment data — same 5 columns as main_analysis.py
+    sentiment_cols = ['sent_mean', 'sent_std', 'sent_count', 'sent_min', 'sent_max']
     for col in sentiment_cols:
         combined_data[col] = combined_data[col].fillna(0)
 
     combined_data = combined_data.dropna()
 
+    print(f"Data loaded: {len(combined_data)} days of data for {stock_symbol}")
     return combined_data
 
 
 def prepare_sequences(data, features, target_col='Close', sequence_length=60):
-    """Prepare sequential data for LSTM."""
+    """Prepare sequential data for LSTM. Identical to main_analysis.py."""
     scaler_features = RobustScaler()
     scaler_target = RobustScaler()
 
@@ -141,7 +139,10 @@ def prepare_sequences(data, features, target_col='Close', sequence_length=60):
 
 
 def build_lstm_model(input_shape):
-    """Build LSTM model matching the one used in the main analysis."""
+    """
+    Build sentiment-augmented LSTM model.
+    Identical to main_analysis.py build_advanced_lstm().
+    """
     model = Sequential([
         LSTM(128, return_sequences=True, input_shape=input_shape,
              kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
@@ -218,7 +219,7 @@ def create_feature_importance_figure(stocks=['AAPL', 'TSLA', 'MSFT']):
         # Load data
         data = load_and_preprocess_data(stock)
 
-        # Define features
+        # Define features — identical to main_analysis.py
         feature_cols = [col for col in data.columns
                        if col not in ['Date', 'Stock Name', 'Close']]
 
@@ -271,7 +272,7 @@ def create_feature_importance_figure(stocks=['AAPL', 'TSLA', 'MSFT']):
 
     # Categorize features
     def categorize_feature(feature_name):
-        if 'sent_' in feature_name or 'subjectivity' in feature_name.lower():
+        if 'sent_' in feature_name:
             return 'Sentiment'
         elif 'volume' in feature_name.lower():
             return 'Volume'

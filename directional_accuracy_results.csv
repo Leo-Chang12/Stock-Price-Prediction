@@ -1,7 +1,7 @@
 Stock,Model,Mean_Directional_Accuracy,Std_Directional_Accuracy
-AAPL,Baseline,53.85%,16.14%
-AAPL,With Sentiment,53.85%,10.88%
-TSLA,Baseline,56.92%,15.84%
-TSLA,With Sentiment,49.23%,22.08%
-MSFT,Baseline,50.77%,10.43%
-MSFT,With Sentiment,60.00%,17.13%
+AAPL,Baseline,49.23%,6.15%
+AAPL,With Sentiment,53.85%,8.43%
+TSLA,Baseline,50.77%,11.51%
+TSLA,With Sentiment,52.31%,20.87%
+MSFT,Baseline,53.85%,11.92%
+MSFT,With Sentiment,47.69%,5.76%

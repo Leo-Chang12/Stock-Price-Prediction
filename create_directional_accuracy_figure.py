@@ -5,6 +5,9 @@ Creates Figure 7 for the Stock Price Prediction manuscript
 This script calculates directional accuracy (the percentage of times the model
 correctly predicted whether the stock price would increase or decrease) and
 compares baseline LSTM models to sentiment-enhanced LSTM models.
+
+Data loading, feature engineering, and model architectures are identical
+to main_analysis.py.
 """
 
 import numpy as np
@@ -43,7 +46,10 @@ tf.random.set_seed(42)
 
 
 def load_and_preprocess_data(stock_symbol):
-    """Load and preprocess stock data with sentiment analysis."""
+    """
+    Load and preprocess stock data with sentiment analysis.
+    Identical to main_analysis.py ImprovedStockPredictor.load_and_preprocess_data().
+    """
     # Load datasets
     tweets = pd.read_csv('stock_tweets.csv')
     yfinance_data = pd.read_csv('stock_yfinance_data.csv')
@@ -52,13 +58,19 @@ def load_and_preprocess_data(stock_symbol):
     tweets_selected = tweets[tweets['Stock Name'] == stock_symbol].copy()
     yfinance_selected = yfinance_data[yfinance_data['Stock Name'] == stock_symbol].copy()
 
-    # Enhanced sentiment analysis
-    tweets_selected['Sentiment'] = tweets_selected['Tweet'].apply(
-        lambda x: TextBlob(str(x)).sentiment.polarity if pd.notna(x) else 0.0
-    )
+    # Sentiment analysis — identical to main_analysis.py _calculate_sentiment
+    def calculate_sentiment(text):
+        try:
+            if pd.isna(text) or text == '':
+                return 0.0
+            return TextBlob(str(text)).sentiment.polarity
+        except:
+            return 0.0
+
+    tweets_selected['Sentiment'] = tweets_selected['Tweet'].apply(calculate_sentiment)
     tweets_selected['Date'] = pd.to_datetime(tweets_selected['Date']).dt.date
 
-    # Aggregate sentiment metrics
+    # Aggregate sentiment metrics — identical column names to main_analysis.py
     daily_sentiment = tweets_selected.groupby('Date').agg({
         'Sentiment': ['mean', 'std', 'count', 'min', 'max']
     }).round(6)
@@ -70,49 +82,46 @@ def load_and_preprocess_data(stock_symbol):
     yfinance_selected['Date'] = pd.to_datetime(yfinance_selected['Date']).dt.date
     yfinance_selected = yfinance_selected.sort_values('Date')
 
-    # Feature engineering
+    # Technical features — identical to main_analysis.py _create_technical_features
     df = yfinance_selected.copy()
     df['returns'] = df['Close'].pct_change()
     df['log_returns'] = np.log(df['Close'] / df['Close'].shift(1))
     df['price_range'] = (df['High'] - df['Low']) / df['Close']
     df['volume_ratio'] = df['Volume'] / df['Volume'].rolling(20).mean()
 
-    # Moving averages
     for window in [5, 10, 20, 50]:
         df[f'ma_{window}'] = df['Close'].rolling(window).mean()
         df[f'ma_ratio_{window}'] = df['Close'] / df[f'ma_{window}']
 
-    # Volatility features
     df['volatility_5'] = df['returns'].rolling(5).std()
     df['volatility_20'] = df['returns'].rolling(20).std()
 
-    # RSI
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     df['rsi'] = 100 - (100 / (1 + rs))
 
-    # MACD
     exp1 = df['Close'].ewm(span=12).mean()
     exp2 = df['Close'].ewm(span=26).mean()
     df['macd'] = exp1 - exp2
 
-    # Merge datasets
+    # Merge with sentiment
     combined_data = df.merge(daily_sentiment, on='Date', how='left')
 
-    # Fill missing sentiment data
+    # Fill missing sentiment data — same 5 columns as main_analysis.py
     sentiment_cols = ['sent_mean', 'sent_std', 'sent_count', 'sent_min', 'sent_max']
     for col in sentiment_cols:
         combined_data[col] = combined_data[col].fillna(0)
 
     combined_data = combined_data.dropna()
 
+    print(f"Data loaded: {len(combined_data)} days of data for {stock_symbol}")
     return combined_data
 
 
 def prepare_sequences(data, features, target_col='Close', sequence_length=60):
-    """Prepare sequential data for LSTM training."""
+    """Prepare sequential data for LSTM. Identical to main_analysis.py."""
     scaler_features = RobustScaler()
     scaler_target = RobustScaler()
 
@@ -123,18 +132,18 @@ def prepare_sequences(data, features, target_col='Close', sequence_length=60):
     target_scaled = scaler_target.fit_transform(target_data)
 
     X, y = [], []
-    valid_dates = []
-
     for i in range(sequence_length, len(feature_scaled)):
         X.append(feature_scaled[i-sequence_length:i])
         y.append(target_scaled[i])
-        valid_dates.append(data.iloc[i]['Date'])
 
-    return np.array(X), np.array(y), scaler_features, scaler_target, valid_dates
+    return np.array(X), np.array(y), scaler_features, scaler_target
 
 
 def build_advanced_lstm(input_shape):
-    """Build advanced LSTM architecture with regularization."""
+    """
+    Build sentiment-augmented LSTM architecture with regularization.
+    Identical to main_analysis.py build_advanced_lstm().
+    """
     model = Sequential([
         LSTM(128, return_sequences=True, input_shape=input_shape,
              kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
@@ -163,30 +172,18 @@ def build_advanced_lstm(input_shape):
 
 
 def build_baseline_lstm(input_shape):
-    """Build baseline LSTM for comparison (without sentiment)."""
+    """
+    Build baseline LSTM for comparison (without sentiment).
+    Identical to main_analysis.py build_baseline_lstm():
+    single 50-unit LSTM layer, 0.2 dropout, linear output.
+    """
     model = Sequential([
-        LSTM(128, return_sequences=True, input_shape=input_shape,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
-        Dropout(0.3),
-
-        LSTM(64, return_sequences=True,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
-        Dropout(0.3),
-
-        LSTM(32, return_sequences=False,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
+        LSTM(50, return_sequences=False, input_shape=input_shape),
         Dropout(0.2),
-
-        Dense(16, activation='relu', kernel_regularizer=l2(0.001)),
-        Dropout(0.1),
-        Dense(1, activation='linear')
+        Dense(1)
     ])
 
-    optimizer = Adam(learning_rate=0.001)
-    model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
 
     return model
 
@@ -195,44 +192,25 @@ def calculate_directional_accuracy(y_true, y_pred):
     """
     Calculate directional accuracy: percentage of times the model correctly
     predicted the direction of price movement (up or down).
-
-    Args:
-        y_true: Actual prices
-        y_pred: Predicted prices
-
-    Returns:
-        float: Directional accuracy as a percentage (0-100)
     """
-    # Calculate actual and predicted directions
     actual_direction = np.sign(np.diff(y_true))
     predicted_direction = np.sign(np.diff(y_pred))
-
-    # Compare directions (ignoring the first value since we use diff)
     correct_directions = (actual_direction == predicted_direction).astype(int)
-
-    # Calculate accuracy
     directional_accuracy = np.mean(correct_directions) * 100
-
     return directional_accuracy
 
 
 def train_and_evaluate_directional_accuracy(stock_symbol, n_splits=5):
     """
     Train models with cross-validation and calculate directional accuracy.
-
-    Args:
-        stock_symbol: Stock ticker symbol
-        n_splits: Number of cross-validation splits
-
-    Returns:
-        dict: Results including directional accuracies
+    Uses the same CV setup as main_analysis.py.
     """
     print(f"\nAnalyzing {stock_symbol}...")
 
     # Load data
     data = load_and_preprocess_data(stock_symbol)
 
-    # Define features
+    # Define features — identical to main_analysis.py
     all_features = [col for col in data.columns
                    if col not in ['Date', 'Stock Name', 'Close']]
 
@@ -247,31 +225,30 @@ def train_and_evaluate_directional_accuracy(stock_symbol, n_splits=5):
     }
 
     # Prepare sequences for both models
-    X_advanced, y, scaler_feat_adv, scaler_target, dates = prepare_sequences(
+    X_advanced, y, scaler_feat_adv, scaler_target = prepare_sequences(
         data, all_features, 'Close'
     )
-    X_baseline, _, scaler_feat_base, _, _ = prepare_sequences(
+    X_baseline, _, scaler_feat_base, _ = prepare_sequences(
         data, baseline_features, 'Close'
     )
 
-    # Time series cross-validation
+    # Time series cross-validation — identical to main_analysis.py
     tscv = TimeSeriesSplit(n_splits=n_splits, test_size=len(X_advanced)//10)
 
     fold = 1
     for train_idx, test_idx in tscv.split(X_advanced):
         print(f"  Fold {fold}/{n_splits}")
 
-        # Advanced model (with sentiment)
-        X_train_adv, X_test_adv = X_advanced[train_idx], X_advanced[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
-
-        model_adv = build_advanced_lstm((X_train_adv.shape[1], X_train_adv.shape[2]))
 
         callbacks = [
             EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, min_lr=1e-7)
         ]
 
+        # Advanced model (with sentiment) — 3-layer LSTM
+        X_train_adv, X_test_adv = X_advanced[train_idx], X_advanced[test_idx]
+        model_adv = build_advanced_lstm((X_train_adv.shape[1], X_train_adv.shape[2]))
         model_adv.fit(X_train_adv, y_train, epochs=100, batch_size=32,
                      validation_split=0.2, callbacks=callbacks, verbose=0)
 
@@ -285,11 +262,9 @@ def train_and_evaluate_directional_accuracy(stock_symbol, n_splits=5):
         results['advanced']['directional_accuracies'].append(dir_acc_adv)
         results['advanced']['rmse'].append(rmse_adv)
 
-        # Baseline model (without sentiment)
+        # Baseline model (without sentiment) — single 50-unit LSTM
         X_train_base, X_test_base = X_baseline[train_idx], X_baseline[test_idx]
-
         model_base = build_baseline_lstm((X_train_base.shape[1], X_train_base.shape[2]))
-
         model_base.fit(X_train_base, y_train, epochs=100, batch_size=32,
                       validation_split=0.2, callbacks=callbacks, verbose=0)
 
@@ -369,10 +344,10 @@ def create_directional_accuracy_figure(stocks=['AAPL', 'TSLA', 'MSFT']):
 
     for stock in stocks_list:
         print(f"\n{stock}:")
-        print(f"  Baseline LSTM:")
+        print(f"  Baseline LSTM (50-unit single layer):")
         print(f"    Mean Directional Accuracy: {all_results[stock]['baseline']['mean_dir_acc']:.2f}%")
         print(f"    Std Dev: {all_results[stock]['baseline']['std_dir_acc']:.2f}%")
-        print(f"  LSTM with Sentiment:")
+        print(f"  LSTM with Sentiment (128/64/32 three-layer):")
         print(f"    Mean Directional Accuracy: {all_results[stock]['advanced']['mean_dir_acc']:.2f}%")
         print(f"    Std Dev: {all_results[stock]['advanced']['std_dir_acc']:.2f}%")
         print(f"  Difference: {all_results[stock]['advanced']['mean_dir_acc'] - all_results[stock]['baseline']['mean_dir_acc']:.2f}%")
