@@ -318,17 +318,20 @@ def create_directional_accuracy_figure(stocks=['AAPL', 'TSLA', 'MSFT']):
                    color='#E74C3C', alpha=0.8, edgecolor='black', linewidth=1.5)
 
     # Add 50% random baseline reference line
-    ax.axhline(y=50, color='gray', linestyle='--', linewidth=2.5, alpha=0.7,
-               label='Random Baseline (50%)')
+    baseline_line = ax.axhline(y=50, color='gray', linestyle='--', linewidth=2.5, alpha=0.7,
+                               label='Random Baseline (50%)')
 
     # Customize plot
     ax.set_xlabel('Stock Symbol', fontweight='bold')
     ax.set_ylabel('Directional Accuracy (%)', fontweight='bold')
     ax.set_xticks(x)
     ax.set_xticklabels(stocks_list)
-    ax.legend(frameon=True, fancybox=True, shadow=True, loc='lower right')
+    # legend entry order matches Figure 1 (sentiment model first)
+    ax.legend(handles=[bars2, bars1, baseline_line],
+              frameon=True, fancybox=True, shadow=True, loc='upper left')
     ax.grid(True, alpha=0.3, axis='y')
-    ax.set_ylim([45, 60])
+    # 0-based axis so bars and error bars are fully visible, matching the other figures
+    ax.set_ylim([0, 85])
 
     plt.tight_layout()
     plt.savefig('Figure7_Directional_Accuracy_Comparison.png', dpi=300,
